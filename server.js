@@ -1,8 +1,53 @@
 var http = require('http');
 var fs = require('fs');
 var url = require('url');
+var path = require ('path');
+
+var util = require('util');
+
+var utilities = require('./utilities/utilities.js');
 var sqlOperations = require('./SqlOperations.js');
 
+var ejs = require('ejs');
+
+const express = require("express");
+const app = express();
+const port = 8080;
+// EJS is our templating system; it will make dynamic HTML possible.
+app.set('view engine', 'ejs');
+
+app.use(express.urlencoded({ extended: true }));
+
+// allow serving files from the root directory
+//app.use(express.static('.'));
+
+app.get('/prisoners', function(req, res) {
+    console.log("The query: " + JSON.stringify(req.query));
+    if(req.query.name){
+        const prisoner = sqlOperations.getNamedPrisoner(req.query.name, function(prisonerData) {
+            if(prisonerData === undefined){
+                res.render('prisoners', {prisonerWasSubmitted: false, prisonerNotFound: true});
+            } else {
+                console.log("The prisoner data: " + JSON.stringify(prisonerData[0]));
+                res.render('prisoners', Object.assign(prisonerData, {prisonerWasSubmitted: true, prisonerNotFound: false}));
+            }
+        })
+    } else {
+        console.log("No prisoner was submitted");
+        res.render('prisoners', {prisonerWasSubmitted: false, prisonerNotFound: false});
+    }
+})
+
+app.post('/prisoners', function(req, res) {
+    console.log("The request body: " + req.body.name);
+    res.redirect('/prisoners?name=' + req.body.name);
+})
+
+app.listen(port, () => {
+    console.log(`Listening on port ${port}`);
+})
+
+/*
 http.createServer(async function (req, res) {
     let body = [];
     let queryData = url.parse(req.url, true).query;
@@ -50,8 +95,9 @@ http.createServer(async function (req, res) {
 
         res.end();
 
-    })*/
+    })
     //res.writeHead(200, { 'content-type': 'text/html' });
     //fs.createReadStream("index.html").pipe(res);
 
 }).listen(8080);
+*/

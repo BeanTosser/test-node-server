@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<head>
+    <title>Test Server</title>
+</head>
+<body>
+    <h1>Prisoners</h1>
+    <%- include("./partials/prisoner_form") %>
+    <% if (prisonerWasSubmitted) { %>
+        <table>
+            <tr>
+                <td>
+                    <%= id %>
+                </td>
+                <td>
+                    <%= name %>
+                </td>
+                <td>
+                    <%= crime %>
+                </td>
+                <td>
+                    <%= sentence %>
+                </td>
+                <td>
+                    <%= behavior %>
+                </td>
+            </tr>
+        </table>
+    <% } else if(prisonerNotFound) { %>
+        <%- include("./partials/error"); %>
+    <% } %>
+</body>

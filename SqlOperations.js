@@ -18,30 +18,19 @@ const connectToSql = function(callback){
 exports.connectToSql = connectToSql;
 
 exports.getAllPrisoners = function(){
-    try{
-        con.query("SELECT * FROM Prisoners", function (err, result, fields) {
-            if (err) throw err;
-            console.log(result);
-            return result;
-        });
-    } catch(e){
-        console.error(e);
-    }
+    con.query("SELECT * FROM Prisoners", function (err, result, fields) {
+        if (err) throw err;
+        console.log(result);
+        return result;
+    });
 }
 
 exports.getNamedPrisoner = async function(name, callback){
     connectToSql(() => {
         let queryString = "SELECT * FROM prisoners where name = '" + name + "';"
-        console.log("The query string: " + queryString);
-        try{
             con.query(queryString, function (err, result, fields) {
                 if(err) throw err;
-                console.log("result: " + JSON.stringify(result));
-                callback(result);
+                callback(result[0]);
             })
-        } catch(e) {
-            console.log("There's a problem.");
-            console.error(e);
-        }
-    })
+        })
 }
