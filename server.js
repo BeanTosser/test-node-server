@@ -3,6 +3,8 @@ var fs = require('fs');
 var url = require('url');
 var path = require ('path');
 
+var bcrypt = require('bcrypt');
+
 var util = require('util');
 
 var utilities = require('./utilities/utilities.js');
@@ -19,12 +21,13 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 
 // allow serving files from the root directory
-//app.use(express.static('.'));
+app.use(express.static(path.join(__dirname, "public")));
 
-app.get('/prisoners', function(req, res) {
-    console.log("The query: " + JSON.stringify(req.query));
-    if(req.query.name){
-        const prisoner = sqlOperations.getNamedPrisoner(req.query.name, function(prisonerData) {
+app.get('/prisoners', async function(req, res) {
+    console.log("The query: " + JSON.stringify(req.body));
+    if(req.body.name){
+        const prisoner = sqlOperations.getNamedPrisoner(req.body.name, function(prisonerData) {
+
             if(prisonerData === undefined){
                 res.render('prisoners', {prisonerWasSubmitted: false, prisonerNotFound: true});
             } else {
@@ -38,66 +41,57 @@ app.get('/prisoners', function(req, res) {
     }
 })
 
+app.get('/', async function(req, res) {
+    console.log("What a salt looks like: " + (await bcrypt.genSalt(10)).length)
+    res.render('home');
+})
+
+app.get('/login', function(req, res) {
+    res.render('login');
+})
+
+app.get('/success', function(req, res){
+    res.render('success');
+})
+
+app.get('/failure', function(req, res) {
+    res.render('failure');
+})
+
+app.get('/new_user', function(req, res){
+    res.render('new_user');
+})
+
+app.post('/new_user', async function(req,res){
+    console.log("Attempting to add new user");
+    const success = await sqlOperations.addUser(req.body.username, req.body.password);
+    if(success){
+        console.log("Redirecting");
+        res.redirect("/success");
+    }
+    res.redirect("/failure");
+    
+})
+
+app.post('/login', async function(req, res) {
+    console.log("user tried to login: " + req.body.username + ", " + req.body.password);
+    const loginWasSuccessful = await sqlOperations.login(req.body.username, req.body.password);
+    if(loginWasSuccessful){
+        res.redirect('/success');
+    }
+    res.redirect('/failure');
+})
+
 app.post('/prisoners', function(req, res) {
     console.log("The request body: " + req.body.name);
     res.redirect('/prisoners?name=' + req.body.name);
 })
 
+app.all('/{*any}', function(req, res){
+    console.log("render all");
+    res.render('404');
+})
+
 app.listen(port, () => {
     console.log(`Listening on port ${port}`);
 })
-
-/*
-http.createServer(async function (req, res) {
-    let body = [];
-    let queryData = url.parse(req.url, true).query;
-    console.log("URL: " + req.url);
-    console.log("Sliced url: " + req.url.slice(0,10));
-    if(req.url.slice(0,10) === "/prisoners"){
-        console.log("We SHOULD be attempting to query the database now.")
-        if(queryData.name){
-            console.log("The query has a name");
-            sqlOperations.getNamedPrisoner(queryData.name, function(queryResponse){
-                console.log("Got named prisoner: " + queryResponse);
-                res.setHeader('Content-Type', 'application/json');
-                console.log("Set the header.");
-                res.write(JSON.stringify(queryResponse));
-                console.log("Wrote the response");
-                res.on('error', (err) => {
-                    console.error(err);
-                });
-                res.end();
-            });
-        }else {
-            console.log("Query doesn't have a name.");
-        }
-
-    } else if (req.url === "/"){
-        res.writeHead(200, {"content-type": "text/html"});
-        fs.createReadStream('index.html').pipe(res);
-    } else {
-        res.writeHead(404, {});
-        res.end();
-    }
-    /*req.on('error', (err) => {
-        console.error(err);
-    }).on('data', (chunk) => {
-        body.push(chunk);
-    }).on('end', () => {
-        body = Buffer.concat(body).toString();
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        const responseBody = {headers, method, url, body};
-        res.write(JSON.stringify(responseBody));
-        res.on('error', (err) => {
-            console.error(err);
-        });
-
-        res.end();
-
-    })
-    //res.writeHead(200, { 'content-type': 'text/html' });
-    //fs.createReadStream("index.html").pipe(res);
-
-}).listen(8080);
-*/
